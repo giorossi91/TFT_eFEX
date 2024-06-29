@@ -8,6 +8,8 @@
 
 #include "TFT_eFEX.h"
 
+#include <HardwareSerial.h>
+
 
 /***************************************************************************************
 ** Function name:           TFT_eFEX
@@ -1432,10 +1434,11 @@ typedef struct {
 //    JPEG decoder support function prototypes
 //
 /**************************************************************************/
-static uint32_t jpgReadFile(JDEC *decoder, uint8_t *buf, uint32_t len);
-static uint32_t jpgRead(JDEC *decoder, uint8_t *buf, uint32_t len);
-static uint32_t jpgWrite(JDEC *decoder, void *bitmap, JRECT *rect);
-static bool     jpgDecode(jpg_file_decoder_t * jpeg, uint32_t(* reader)(JDEC*,uint8_t *, uint32_t));
+
+static size_t     jpgReadFile(JDEC *decoder, uint8_t *buf, size_t len);
+static size_t     jpgRead(JDEC *decoder, uint8_t *buf, size_t len);
+static int        jpgWrite(JDEC *decoder, void *bitmap, JRECT *rect);
+static bool       jpgDecode(jpg_file_decoder_t * jpeg, size_t (*reader)(JDEC*,uint8_t*,size_t));
 
 
 /**************************************************************************/
@@ -1554,7 +1557,7 @@ bool TFT_eFEX::drawJpgFile(fs::FS &fs, const char * path, uint16_t x, uint16_t y
 //    JPEG decoder support functions
 //
 /**************************************************************************/
-static uint32_t jpgReadFile(JDEC *decoder, uint8_t *buf, uint32_t len){
+static size_t jpgReadFile(JDEC *decoder, uint8_t *buf, size_t len){
     jpg_file_decoder_t * jpeg = (jpg_file_decoder_t *)decoder->device;
     fs::File * file = (fs::File *)jpeg->src;
     if(buf){
@@ -1565,7 +1568,8 @@ static uint32_t jpgReadFile(JDEC *decoder, uint8_t *buf, uint32_t len){
     return len;
 }
 
-static uint32_t jpgRead(JDEC *decoder, uint8_t *buf, uint32_t len){
+
+static size_t jpgRead(JDEC *decoder, uint8_t *buf, size_t len){
     jpg_file_decoder_t * jpeg = (jpg_file_decoder_t *)decoder->device;
     if(buf){
         memcpy(buf, (const uint8_t *)jpeg->src + jpeg->index, len);
@@ -1574,7 +1578,7 @@ static uint32_t jpgRead(JDEC *decoder, uint8_t *buf, uint32_t len){
     return len;
 }
 
-static uint32_t jpgWrite(JDEC *decoder, void *bitmap, JRECT *rect){
+static int jpgWrite(JDEC *decoder, void *bitmap, JRECT *rect){
     jpg_file_decoder_t * jpeg = (jpg_file_decoder_t *)decoder->device;
     uint16_t x = rect->left;
     uint16_t y = rect->top;
@@ -1639,7 +1643,9 @@ static uint32_t jpgWrite(JDEC *decoder, void *bitmap, JRECT *rect){
     return 1;
 }
 
-static bool jpgDecode(jpg_file_decoder_t * jpeg, uint32_t(* reader)(JDEC*,uint8_t *, uint32_t)){
+
+
+static bool jpgDecode(jpg_file_decoder_t * jpeg, size_t (*reader)(JDEC*,uint8_t*,size_t)){
     static uint8_t work[3100];
     JDEC decoder;
 
